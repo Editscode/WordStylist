@@ -144,7 +144,7 @@ public static class Program
             var tTensor = new DenseTensor<long>(new[] { 1 });
             tTensor[0] = step;
 
-            using var inputs = new List<NamedOnnxValue>
+            var inputs = new List<NamedOnnxValue>
             {
                 NamedOnnxValue.CreateFromTensor("x", inputTensor),
                 NamedOnnxValue.CreateFromTensor("timesteps", tTensor),
@@ -153,7 +153,8 @@ public static class Program
             };
 
             using var results = session.Run(inputs);
-            var predictedNoise = results[0].AsTensor<float>();
+            var predictedNoise = results[0].AsTensor<float>().ToArray();
+            DisposeInputs(inputs);
 
             var alpha = alphas[step];
             var alphaHat = alphaHats[step];
@@ -165,7 +166,7 @@ public static class Program
             for (var i = 0; i < x.Length; i++)
             {
                 var noise = step > 1 ? NextGaussian(random) : 0f;
-                var pred = predictedNoise.Buffer.Span[i];
+                var pred = predictedNoise[i];
                 x[i] = (1f / sqrtAlpha) * (x[i] - ((1f - alpha) / sqrtOneMinusAlphaHat) * pred) + sqrtBeta * noise;
             }
         }
@@ -185,13 +186,14 @@ public static class Program
         using var session = new InferenceSession(options.VaePath);
         var latentTensor = new DenseTensor<float>(latents, new[] { 1, 4, latentH, latentW });
 
-        using var inputs = new List<NamedOnnxValue>
+        var inputs = new List<NamedOnnxValue>
         {
             NamedOnnxValue.CreateFromTensor("latents", latentTensor),
         };
 
         using var results = session.Run(inputs);
         var images = results[0].AsTensor<float>();
+        DisposeInputs(inputs);
         var image = new Image<Rgb24>(options.ImgWidth, options.ImgHeight);
 
         for (var y = 0; y < options.ImgHeight; y++)
@@ -238,6 +240,14 @@ public static class Program
         var u1 = 1.0 - random.NextDouble();
         var u2 = 1.0 - random.NextDouble();
         return (float)(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2));
+    }
+
+    private static void DisposeInputs(IEnumerable<NamedOnnxValue> inputs)
+    {
+        foreach (var input in inputs)
+        {
+            input.Dispose();
+        }
     }
 
     private sealed class Options
