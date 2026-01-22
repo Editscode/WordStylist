@@ -61,6 +61,35 @@ If you want to generate a single word with a random style you can run:
 python sampling.py --save_path path/to/save/generated/images --models_path /path/to/trained/models --words ['hello']
 ```
 
+## ONNX export + C# CPU inference
+
+The original implementation is PyTorch, but you can export the UNet and VAE decoder to ONNX
+and run inference on CPU using ONNX Runtime in C#.
+
+### 1) Export ONNX models (CPU-safe)
+
+Download the trained model weights and Stable Diffusion VAE, then run:
+```
+./scripts/export_onnx.sh /path/to/trained/models ./stable-diffusion-v1-5 ./onnx
+```
+
+This generates:
+```
+./onnx/wordstylist_unet.onnx
+./onnx/wordstylist_vae_decoder.onnx
+```
+
+### 2) Run the C# CPU sample
+
+```
+./scripts/run_csharp_cpu.sh ./onnx ./outputs/wordstylist.png hello 0
+```
+
+The sample project lives in `csharp/WordStylistCpuSample` and runs the diffusion loop on CPU.
+It expects:
+* a word containing only `[A-Za-z]`
+* a style ID between `0` and `338`
+
 ## Citation
 
 If you find the code useful for your research, please cite our paper:
