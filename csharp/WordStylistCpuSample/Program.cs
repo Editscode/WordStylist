@@ -154,7 +154,6 @@ public static class Program
 
             using var results = session.Run(inputs);
             var predictedNoise = results[0].AsTensor<float>().ToArray();
-            DisposeInputs(inputs);
 
             var alpha = alphas[step];
             var alphaHat = alphaHats[step];
@@ -193,7 +192,6 @@ public static class Program
 
         using var results = session.Run(inputs);
         var images = results[0].AsTensor<float>();
-        DisposeInputs(inputs);
         var image = new Image<Rgb24>(options.ImgWidth, options.ImgHeight);
 
         for (var y = 0; y < options.ImgHeight; y++)
@@ -240,14 +238,6 @@ public static class Program
         var u1 = 1.0 - random.NextDouble();
         var u2 = 1.0 - random.NextDouble();
         return (float)(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2));
-    }
-
-    private static void DisposeInputs(IEnumerable<NamedOnnxValue> inputs)
-    {
-        foreach (var input in inputs)
-        {
-            input.Dispose();
-        }
     }
 
     private sealed class Options
